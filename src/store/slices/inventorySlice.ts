@@ -5,7 +5,6 @@ import {
   createSelector,
   PayloadAction,
 } from "@reduxjs/toolkit";
-
 import { RootState } from "./store";
 import { Product } from "@/types";
 
@@ -61,46 +60,55 @@ const initialState: InventoryState = {
   error: null,
 };
 
-// Selectors
+// Base Selectors
 export const selectAllProducts = (state: RootState) => state.inventory.products;
-export const selectProductById = (state: RootState, id: string) =>
-  state.inventory.products.find((product) => product.id === id);
 
+export const selectActiveProducts = createSelector(
+  [selectAllProducts],
+  (products) => products.filter((product) => !product.isDisabled)
+);
+
+// Value Calculations
 export const selectProductValue = (product: Product): number => {
+  if (product.isDisabled) return 0;
   const price = getPriceInInt(product.price);
   return price * product.quantity;
 };
 
+// Derived Selectors
 export const selectTotalValue = createSelector(
-  [selectAllProducts],
+  [selectActiveProducts],
   (products: Product[]): number =>
     products.reduce((sum, product) => sum + selectProductValue(product), 0)
 );
 
 export const selectOutOfStockCount = createSelector(
-  [selectAllProducts],
+  [selectActiveProducts],
   (products) => products.filter((product) => product.quantity === 0).length
 );
 
 export const selectCategoryCount = createSelector(
-  [selectAllProducts],
+  [selectActiveProducts],
   (products) => new Set(products.map((product) => product.category)).size
 );
 
 export const selectLowStockProducts = createSelector(
-  [selectAllProducts],
+  [selectActiveProducts],
   (products) => products.filter((product) => product.quantity <= 10)
 );
 
 export const selectInventoryStats = createSelector(
   [
     selectAllProducts,
+    selectActiveProducts,
     selectTotalValue,
     selectOutOfStockCount,
     selectCategoryCount,
   ],
-  (products, totalValue, outOfStock, categories) => ({
-    totalProducts: products.length,
+  (allProducts, activeProducts, totalValue, outOfStock, categories) => ({
+    totalProducts: allProducts.length,
+    activeProducts: activeProducts.length,
+    disabledProducts: allProducts.length - activeProducts.length,
     totalValue: totalValue.toFixed(2),
     outOfStock,
     categories,
@@ -111,18 +119,21 @@ const inventorySlice = createSlice({
   name: "inventory",
   initialState,
   reducers: {
-    toggleRole: (state) => {
+    toggleRole: (state: InventoryState) => {
       state.role = state.role === "admin" ? "user" : "admin";
     },
-    setEditingProduct: (state, action: PayloadAction<Product>) => {
+    setEditingProduct: (
+      state: InventoryState,
+      action: PayloadAction<Product>
+    ) => {
       state.editingProduct = action.payload;
       state.isEditDialogOpen = true;
     },
-    closeEditDialog: (state) => {
+    closeEditDialog: (state: InventoryState) => {
       state.editingProduct = null;
       state.isEditDialogOpen = false;
     },
-    updateProduct: (state, action: PayloadAction<Product>) => {
+    updateProduct: (state: InventoryState, action: PayloadAction<Product>) => {
       const updatedProduct = {
         ...action.payload,
         quantity: Number(action.payload.quantity),
@@ -134,12 +145,15 @@ const inventorySlice = createSlice({
       }
       state.isEditDialogOpen = false;
     },
-    deleteProduct: (state, action: PayloadAction<string>) => {
+    deleteProduct: (state: InventoryState, action: PayloadAction<string>) => {
       state.products = state.products.filter(
         (product) => product.id !== action.payload
       );
     },
-    toggleProductStatus: (state, action: PayloadAction<string>) => {
+    toggleProductStatus: (
+      state: InventoryState,
+      action: PayloadAction<string>
+    ) => {
       const product = state.products.find((p) => p.id === action.payload);
       if (product) {
         product.isDisabled = !product.isDisabled;
@@ -148,15 +162,15 @@ const inventorySlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchProducts.pending, (state) => {
+      .addCase(fetchProducts.pending, (state: InventoryState) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchProducts.fulfilled, (state, action) => {
+      .addCase(fetchProducts.fulfilled, (state: InventoryState, action) => {
         state.loading = false;
         state.products = action.payload;
       })
-      .addCase(fetchProducts.rejected, (state, action) => {
+      .addCase(fetchProducts.rejected, (state: InventoryState, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch products";
       });

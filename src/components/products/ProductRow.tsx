@@ -66,7 +66,7 @@ const ProductRow = ({ product }: { product: Product }) => {
             variant="ghost"
             size="icon"
             onClick={() => dispatch(deleteProduct(product.name))}
-            disabled={!isAdmin || product.isDisabled}
+            disabled={!isAdmin}
             title="Delete product"
             className="hover:text-gray-500"
           >

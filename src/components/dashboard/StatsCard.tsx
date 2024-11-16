@@ -13,7 +13,7 @@ export const StatsCards = () => {
       <Widget
         icon={<ShoppingCart />}
         title="Total Products"
-        value={stats.totalProducts}
+        value={stats.activeProducts}
       />
       <Widget
         icon={<CircleDollarSign />}
