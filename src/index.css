@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Main Background */
+    --background: 220 24% 7%; /* Dark gray/black background */
+    --foreground: 220 13% 91%; /* Light gray text */
+
+    /* Card and Component Colors */
+    --card: 140 16% 13%; /* Dark green for stat cards */
+    --card-foreground: 220 13% 91%; /* Same as main foreground */
+
+    --popover: 220 24% 7%; /* Same as background */
+    --popover-foreground: 220 13% 91%;
+
+    /* Primary and Secondary */
+    --primary: 74 79% 49%; /* New lime green accent */
+    --primary-foreground: 220 13% 91%;
+
+    --secondary: 220 14% 13%; /* Subtle dark gray */
+    --secondary-foreground: 220 13% 91%;
+
+    /* Muted */
+    --muted: 220 14% 13%; /* Same as secondary */
+    --muted-foreground: 220 9% 61%; /* Dimmed text */
+
+    /* Accent - New Lime Green */
+    --accent: 74 79% 49%; /* New lime green (RGB: 176, 221, 29) */
+    --accent-foreground: 220 13% 91%;
+
+    /* Table Colors */
+    --table-header: 74 79% 49%; /* Same as accent */
+    --table-row: 220 20% 12%; /* Slightly lighter than background */
+    --table-row-hover: 220 20% 14%; /* Lighter for hover */
+
+    /* Action Colors */
+    --edit: 74 79% 49%; /* New lime green */
+    --view: 217 91% 60%; /* Blue */
+    --destructive: 0 84% 60%; /* Red */
+    --destructive-foreground: 220 13% 91%;
+
+    /* Border and Input */
+    --border: 220 14% 13%;
+    --input: 220 14% 13%;
+    --ring: 74 79% 49%; /* New lime green for focus states */
+
+    --radius: 1rem;
+  }
+}
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
