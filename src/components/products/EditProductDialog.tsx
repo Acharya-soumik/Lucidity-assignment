@@ -8,10 +8,11 @@ import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { closeEditDialog, updateProduct } from "@/store/slices/inventorySlice";
+import { RootState } from "@/store/slices/store";
 
 export const EditProductDialog = () => {
   const dispatch = useDispatch();
-  const state = useSelector((state) => state.inventory);
+  const state = useSelector((state: RootState) => state.inventory);
   const { isEditDialogOpen, editingProduct } = state;
   console.log({ editingProduct }, { isEditDialogOpen });
 

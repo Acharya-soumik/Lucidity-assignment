@@ -1,12 +1,13 @@
-// src/store/store.ts
 import { configureStore } from "@reduxjs/toolkit";
-import inventoryReducer from "@/store/slices/inventorySlice";
+import inventorySlice, { InventoryState } from "./inventorySlice";
 
 export const store = configureStore({
   reducer: {
-    inventory: inventoryReducer,
+    inventory: inventorySlice,
   },
 });
 
-export type RootState = ReturnType<typeof store.getState>;
+export type RootState = {
+  inventory: InventoryState;
+};
 export type AppDispatch = typeof store.dispatch;

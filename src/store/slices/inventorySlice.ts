@@ -1,14 +1,15 @@
 // inventorySlice.ts
-import { InventoryState, Product } from "@/types/index";
 import {
   createSlice,
   createAsyncThunk,
-  createEntityAdapter,
   createSelector,
   PayloadAction,
 } from "@reduxjs/toolkit";
 
-const getPriceInInt = (price: string | number) => {
+import { RootState } from "./store";
+import { Product } from "@/types";
+
+const getPriceInInt = (price: string | number): number => {
   if (typeof price === "string") {
     const cleanPrice = price.replace(/[^\d.]/g, "");
     return parseFloat(cleanPrice) || 0;
@@ -16,7 +17,23 @@ const getPriceInInt = (price: string | number) => {
   return price || 0;
 };
 
-export const fetchProducts = createAsyncThunk(
+interface RawProduct {
+  name: string;
+  category: string;
+  price: string | number;
+  quantity: string | number;
+}
+
+export interface InventoryState {
+  products: Product[];
+  role: "admin" | "user";
+  editingProduct: Product | null;
+  isEditDialogOpen: boolean;
+  loading: boolean;
+  error: string | null;
+}
+
+export const fetchProducts = createAsyncThunk<Product[], string>(
   "inventory/fetchProducts",
   async (endpoint: string) => {
     const response = await fetch(
@@ -25,54 +42,41 @@ export const fetchProducts = createAsyncThunk(
     if (!response.ok) {
       throw new Error("Failed to fetch products");
     }
-    const products = await response.json();
-    return products.map((product: Product) => ({
+    const products: RawProduct[] = await response.json();
+    return products.map((product) => ({
       ...product,
+      id: product.name,
+      quantity: Number(product.quantity),
       isDisabled: false,
     }));
   }
 );
 
-const inventoryAdapter = createEntityAdapter<Product>({
-  selectId: (product) => product.name,
-});
-
-const initialState = inventoryAdapter.getInitialState<
-  Omit<InventoryState, "products">
->({
+const initialState: InventoryState = {
+  products: [],
   role: "admin",
   editingProduct: null,
   isEditDialogOpen: false,
   loading: false,
   error: null,
-});
-
-export const {
-  selectAll: selectAllProducts,
-  selectTotal: selectTotalProducts,
-} = inventoryAdapter.getSelectors((state) => state.inventory);
-
-export const selectProductValue = (product: Product) => {
-  const price = getPriceInInt(product.price);
-  const quantity =
-    typeof product.quantity === "string"
-      ? parseInt(product.quantity)
-      : product.quantity || 0;
-  return price * quantity;
 };
-// Derived selectors
+
+// Selectors
+export const selectAllProducts = (state: RootState) => state.inventory.products;
+export const selectProductById = (state: RootState, id: string) =>
+  state.inventory.products.find((product) => product.id === id);
+
+export const selectProductValue = (product: Product): number => {
+  const price = getPriceInInt(product.price);
+  return price * product.quantity;
+};
+
 export const selectTotalValue = createSelector(
   [selectAllProducts],
-  (products) =>
-    products.reduce((sum, product) => {
-      const price = getPriceInInt(product.price);
-      const quantity =
-        typeof product.quantity === "string"
-          ? parseInt(product.quantity)
-          : product.quantity || 0;
-      return sum + price * quantity;
-    }, 0)
+  (products: Product[]): number =>
+    products.reduce((sum, product) => sum + selectProductValue(product), 0)
 );
+
 export const selectOutOfStockCount = createSelector(
   [selectAllProducts],
   (products) => products.filter((product) => product.quantity === 0).length
@@ -90,14 +94,14 @@ export const selectLowStockProducts = createSelector(
 
 export const selectInventoryStats = createSelector(
   [
-    selectTotalProducts,
+    selectAllProducts,
     selectTotalValue,
     selectOutOfStockCount,
     selectCategoryCount,
   ],
-  (totalProducts, totalValue, outOfStock, categories) => ({
-    totalProducts,
-    totalValue: totalValue.toFixed(0),
+  (products, totalValue, outOfStock, categories) => ({
+    totalProducts: products.length,
+    totalValue: totalValue.toFixed(2),
     outOfStock,
     categories,
   })
@@ -119,20 +123,26 @@ const inventorySlice = createSlice({
       state.isEditDialogOpen = false;
     },
     updateProduct: (state, action: PayloadAction<Product>) => {
-      inventoryAdapter.updateOne(state, {
-        id: action.payload.name,
-        changes: action.payload,
-      });
+      const updatedProduct = {
+        ...action.payload,
+        quantity: Number(action.payload.quantity),
+        price: getPriceInInt(action.payload.price),
+      };
+      const index = state.products.findIndex((p) => p.id === updatedProduct.id);
+      if (index !== -1) {
+        state.products[index] = updatedProduct;
+      }
       state.isEditDialogOpen = false;
     },
-    deleteProduct: inventoryAdapter.removeOne,
+    deleteProduct: (state, action: PayloadAction<string>) => {
+      state.products = state.products.filter(
+        (product) => product.id !== action.payload
+      );
+    },
     toggleProductStatus: (state, action: PayloadAction<string>) => {
-      const product = state.entities[action.payload];
+      const product = state.products.find((p) => p.id === action.payload);
       if (product) {
-        inventoryAdapter.updateOne(state, {
-          id: action.payload,
-          changes: { isDisabled: !product.isDisabled },
-        });
+        product.isDisabled = !product.isDisabled;
       }
     },
   },
@@ -144,7 +154,7 @@ const inventorySlice = createSlice({
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
-        inventoryAdapter.setAll(state, action.payload);
+        state.products = action.payload;
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.loading = false;

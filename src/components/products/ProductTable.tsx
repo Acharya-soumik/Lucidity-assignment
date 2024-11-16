@@ -7,18 +7,18 @@ import {
 } from "@/components/ui/table";
 import ProductRow from "./ProductRow";
 import { useSelector } from "react-redux";
+import { RootState } from "@/store/slices/store";
+const headers = [
+  { id: 1, label: "Name" },
+  { id: 2, label: "Category" },
+  { id: 3, label: "Price" },
+  { id: 4, label: "Quantity" },
+  { id: 5, label: "Value" },
+  { id: 6, label: "Action", align: "right" },
+];
 
 export const ProductTable = () => {
-  const { ids, entities } = useSelector((state) => state.inventory);
-
-  const headers = [
-    { id: 1, label: "Name" },
-    { id: 2, label: "Category" },
-    { id: 3, label: "Price" },
-    { id: 4, label: "Quantity" },
-    { id: 5, label: "Value" },
-    { id: 6, label: "Action", align: "right" as const },
-  ];
+  const products = useSelector((state: RootState) => state.inventory.products);
 
   return (
     <div className="border">
@@ -38,8 +38,8 @@ export const ProductTable = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {ids.map((id: string) => (
-            <ProductRow key={id} product={entities[id]} />
+          {products.map((product) => (
+            <ProductRow key={product.id} product={product} />
           ))}
         </TableBody>
       </Table>

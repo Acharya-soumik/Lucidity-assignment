@@ -10,6 +10,7 @@ import {
   toggleProductStatus,
 } from "@/store/slices/inventorySlice";
 import { Product } from "@/types/index";
+import { RootState } from "@/store/slices/store";
 
 const ProductRow = ({ product }: { product: Product }) => {
   const dispatch = useDispatch();
@@ -18,7 +19,9 @@ const ProductRow = ({ product }: { product: Product }) => {
     dispatch(toggleProductStatus(key));
   };
 
-  const isAdmin = useSelector((state) => state.inventory.role === "admin");
+  const isAdmin = useSelector(
+    (state: RootState) => state.inventory.role === "admin"
+  );
 
   return (
     <TableRow
